@@ -34,7 +34,6 @@ function PillButton({
   }
 
   return (
-    // @ts-ignore
     <El {...commonProps}>
       <span>{children}</span>
       <span className="btn-icon-wrapper">
@@ -75,7 +74,6 @@ function useIntersectionReveal() {
 
   useEffect(() => {
     if (reduced) {
-      setVisible(true)
       return
     }
     const el = ref.current
@@ -95,7 +93,7 @@ function useIntersectionReveal() {
     return () => observer.disconnect()
   }, [reduced])
 
-  return { ref, visible }
+  return { ref, visible: reduced || visible }
 }
 
 export default function PulseGridApp() {
@@ -107,8 +105,8 @@ export default function PulseGridApp() {
   const [modalTab, setModalTab] = useState<'react' | 'css'>('react')
 
   // Physics Spring Sandbox States
-  const [stiffness, setStiffness] = useState(140) // Physical K
-  const [damping, setDamping] = useState(12) // Physical C
+  const [stiffness, setStiffness] = useState(120) // Physical K (matches initial 'wobbly' preset)
+  const [damping, setDamping] = useState(7) // Physical C (matches initial 'wobbly' preset)
   const [sandboxPreset, setSandboxPreset] = useState<'snappy' | 'wobbly' | 'cinematic'>('wobbly')
 
 
@@ -126,19 +124,19 @@ export default function PulseGridApp() {
     }
   }, [theme])
 
-  // Presets selector effect
-  useEffect(() => {
-    if (sandboxPreset === 'snappy') {
+  const handlePresetSelect = (preset: 'snappy' | 'wobbly' | 'cinematic') => {
+    setSandboxPreset(preset)
+    if (preset === 'snappy') {
       setStiffness(240)
       setDamping(18)
-    } else if (sandboxPreset === 'wobbly') {
+    } else if (preset === 'wobbly') {
       setStiffness(120)
       setDamping(7)
-    } else if (sandboxPreset === 'cinematic') {
+    } else if (preset === 'cinematic') {
       setStiffness(60)
       setDamping(14)
     }
-  }, [sandboxPreset])
+  }
 
   // Toast auto-dismissal
   useEffect(() => {
@@ -281,7 +279,7 @@ export default function PulseGridApp() {
     }
   }
 
-  const handleCanvasClick = (_e: React.MouseEvent<HTMLDivElement>) => {
+  const handleCanvasClick = () => {
     // Add an impulse burst
     springVelocity.current = {
       x: (Math.random() - 0.5) * 45,
@@ -333,9 +331,9 @@ export function PhysicalNode({ active }: { active: boolean }) {
   }, [stiffness, damping, modalTab])
 
   // Custom scroll interpolation triggers
-  const heroReveal = useIntersectionReveal()
-  const sandboxReveal = useIntersectionReveal()
-  const bentoReveal = useIntersectionReveal()
+  const { ref: heroRef, visible: heroVisible } = useIntersectionReveal()
+  const { ref: sandboxRef, visible: sandboxVisible } = useIntersectionReveal()
+  const { ref: bentoRef, visible: bentoVisible } = useIntersectionReveal()
 
 
   const copyToClipboard = (text: string) => {
@@ -475,8 +473,8 @@ export function PhysicalNode({ active }: { active: boolean }) {
         {/* HERO SECTION */}
         <section
           className="section"
-          ref={heroReveal.ref}
-          data-visible={heroReveal.visible ? 'true' : 'false'}
+          ref={heroRef}
+          data-visible={heroVisible ? 'true' : 'false'}
           style={{ paddingBottom: 60 }}
         >
           <div className="container" style={{ textAlign: 'center' }}>
@@ -537,8 +535,8 @@ export function PhysicalNode({ active }: { active: boolean }) {
         <section
           id="playground"
           className="section"
-          ref={sandboxReveal.ref}
-          data-visible={sandboxReveal.visible ? 'true' : 'false'}
+          ref={sandboxRef}
+          data-visible={sandboxVisible ? 'true' : 'false'}
           style={{ paddingTop: 60, paddingBottom: 60 }}
         >
           <div className="container">
@@ -598,11 +596,11 @@ export function PhysicalNode({ active }: { active: boolean }) {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                    {['snappy', 'wobbly', 'cinematic'].map((preset) => (
+                    {(['snappy', 'wobbly', 'cinematic'] as const).map((preset) => (
                       <button
                         key={preset}
                         type="button"
-                        onClick={() => setSandboxPreset(preset as any)}
+                        onClick={() => handlePresetSelect(preset)}
                         style={{
                           background: sandboxPreset === preset ? 'var(--accent-purple-glow)' : 'transparent',
                           color: sandboxPreset === preset ? 'var(--accent-purple)' : 'var(--text-muted)',
@@ -711,8 +709,8 @@ export function PhysicalNode({ active }: { active: boolean }) {
         <section
           id="bento"
           className="section"
-          ref={bentoReveal.ref}
-          data-visible={bentoReveal.visible ? 'true' : 'false'}
+          ref={bentoRef}
+          data-visible={bentoVisible ? 'true' : 'false'}
           style={{ paddingTop: 60, paddingBottom: 60 }}
         >
           <div className="container">
